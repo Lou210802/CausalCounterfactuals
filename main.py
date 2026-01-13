@@ -15,11 +15,11 @@ def main():
     X = adult.data.features
     y = adult.data.targets
 
-    X_train, X_test, y_train, y_test, input_size = preprocess_adult_data(X, y)
+    X_train, X_val, X_test, y_train, y_val, y_test, input_size = preprocess_adult_data(X, y)
 
     model = Model(input_size)
 
-    train_model(model, X_train, y_train, epochs=100)
+    train_model(model, X_train, y_train, X_val, y_val, epochs=20)
 
     if not os.path.exists(CHECKPOINT_DIR):
         os.makedirs(CHECKPOINT_DIR)

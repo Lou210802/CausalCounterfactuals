@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
-def preprocess_adult_data(X, y, test_size=0.2, random_state=42):
+def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
     """
     Cleans and transforms the UCI Adult Census Income dataset for PyTorch.
 
@@ -46,22 +46,30 @@ def preprocess_adult_data(X, y, test_size=0.2, random_state=42):
     target_col = y.columns[0]
     y_encoded = y[target_col].apply(lambda x: 1 if ">50K" in str(x) else 0).values
 
-    # Perform Train-Test Split
-    X_train_raw, X_test_raw, y_train_np, y_test_np = train_test_split(
+    # Perform Train-Test-Val Split
+    X_temp, X_test_raw, y_temp, y_test_np = train_test_split(
         X_encoded, y_encoded, test_size=test_size, random_state=random_state
     )
+
+    X_train_raw, X_val_raw, y_train_np, y_val_np = train_test_split(
+        X_temp, y_temp, test_size=val_size, random_state=random_state
+    )
+
 
     # Feature Scaling
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_raw)
+    X_val_scaled = scaler.transform(X_val_raw)
     X_test_scaled = scaler.transform(X_test_raw)
 
     X_train = torch.FloatTensor(X_train_scaled)
+    X_val = torch.FloatTensor(X_val_scaled)
     X_test = torch.FloatTensor(X_test_scaled)
 
     y_train = torch.FloatTensor(y_train_np).unsqueeze(1)
+    y_val = torch.FloatTensor(y_val_np).unsqueeze(1)
     y_test = torch.FloatTensor(y_test_np).unsqueeze(1)
 
     input_dim = X_encoded.shape[1]
 
-    return X_train, X_test, y_train, y_test, input_dim
+    return X_train, X_val, X_test, y_train, y_val, y_test, input_dim
