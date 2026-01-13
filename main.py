@@ -2,7 +2,7 @@ from ucimlrepo import fetch_ucirepo
 
 from dataset import preprocess_adult_data
 from model import Model
-from train import train_model
+from train import train_model, test_model
 
 import os
 import torch
@@ -20,6 +20,8 @@ def main():
     model = Model(input_size)
 
     train_model(model, X_train, y_train, X_val, y_val, epochs=20)
+
+    test_model(model, X_test, y_test)
 
     if not os.path.exists(CHECKPOINT_DIR):
         os.makedirs(CHECKPOINT_DIR)

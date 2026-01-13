@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import torch
 
 
@@ -63,3 +64,40 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001, bat
               f"| Val Acc: {val_accuracy:.2f}%")
 
     print("Training complete.")
+
+
+def test_model(model, X_test, y_test, batch_size=64):
+    """
+    Evaluates the model
+    """
+    model.eval()
+    test_ds = TensorDataset(X_test, y_test)
+    test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+
+    all_preds = []
+    all_labels = []
+
+    with torch.no_grad():
+        for batch_X, batch_y in test_loader:
+            outputs = model(batch_X)
+
+            predictions = (torch.sigmoid(outputs) >= 0.5).float()
+
+            all_preds.extend(predictions.cpu().numpy())
+            all_labels.extend(batch_y.cpu().numpy())
+
+    # Calculate metrics
+    acc = accuracy_score(all_labels, all_preds)
+    report = classification_report(all_labels, all_preds, target_names=['<=50K', '>50K'])
+    matrix = confusion_matrix(all_labels, all_preds)
+
+    print("\n" + "=" * 30)
+    print("FINAL TEST RESULTS")
+    print("=" * 30)
+    print(f"Test Accuracy: {acc * 100:.2f}%")
+    print("\nClassification Report:")
+    print(report)
+    print("\nConfusion Matrix:")
+    print(matrix)
+
+    return acc
