@@ -10,6 +10,11 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001, bat
     """
     Trains the model
     """
+    # Select GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    model.to(device)
+
     # Prepare DataLoaders
     train_ds = TensorDataset(X_train, y_train)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
@@ -28,6 +33,8 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001, bat
         progress_bar = tqdm(train_loader, desc=f"Epoch {epoch + 1}/{epochs}", unit="batch", leave=False)
 
         for batch_X, batch_y in progress_bar:
+            batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+
             optimizer.zero_grad()
             outputs = model(batch_X)
             loss = loss_func(outputs, batch_y)
@@ -47,10 +54,11 @@ def train_model(model, X_train, y_train, X_val, y_val, epochs=100, lr=0.001, bat
 
         with torch.no_grad():
             for batch_X, batch_y in val_loader:
+                batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+
                 outputs = model(batch_X)
                 loss = loss_func(outputs, batch_y)
                 val_loss += loss.item()
-
 
                 predictions = torch.sigmoid(outputs) >= 0.5
                 correct += (predictions == batch_y).sum().item()
@@ -70,6 +78,11 @@ def test_model(model, X_test, y_test, batch_size=64):
     """
     Evaluates the model
     """
+    # Select GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    model.to(device)
+
     model.eval()
     test_ds = TensorDataset(X_test, y_test)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
@@ -79,6 +92,8 @@ def test_model(model, X_test, y_test, batch_size=64):
 
     with torch.no_grad():
         for batch_X, batch_y in test_loader:
+            batch_X, batch_y = batch_X.to(device), batch_y.to(device)
+
             outputs = model(batch_X)
 
             predictions = (torch.sigmoid(outputs) >= 0.5).float()
