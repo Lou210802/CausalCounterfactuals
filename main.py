@@ -1,9 +1,8 @@
 import os
 import torch
 import argparse
-from ucimlrepo import fetch_ucirepo
 
-from dataset import preprocess_adult_data
+from dataset import load_data
 from model import Model
 from train import train_model, test_model
 
@@ -28,12 +27,7 @@ def main():
     args = parser.parse_args()
 
     # Load Data
-    print("Fetching dataset...")
-    adult = fetch_ucirepo(id=2)
-    X = adult.data.features
-    y = adult.data.targets
-
-    X_train, X_val, X_test, y_train, y_val, y_test, input_size = preprocess_adult_data(X, y)
+    X_train, X_val, X_test, y_train, y_val, y_test, input_size = load_data()
 
     # Initialize Model
     model = Model(input_size)

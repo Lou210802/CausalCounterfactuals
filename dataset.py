@@ -1,8 +1,48 @@
+import os
+
 import pandas as pd
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from ucimlrepo import fetch_ucirepo
+
+DATA_CACHE_PATH = "data_cache.pt"
+
+
+def load_data():
+    # Check if data is available in local cache
+    if os.path.exists(DATA_CACHE_PATH):
+        print("Load data from cache...")
+        cache = torch.load(DATA_CACHE_PATH)
+        X_train = cache['X_train']
+        X_val = cache['X_val']
+        X_test = cache['X_test']
+        y_train = cache['y_train']
+        y_val = cache['y_val']
+        y_test = cache['y_test']
+        input_size = cache['input_size']
+    else:
+        print("Fetching dataset from UCI...")
+        adult = fetch_ucirepo(id=2)
+        X = adult.data.features
+        y = adult.data.targets
+
+        X_train, X_val, X_test, y_train, y_val, y_test, input_size = preprocess_adult_data(X, y)
+
+        # Save dataset in cache
+        print("Save data to cache...")
+        torch.save({
+            'X_train': X_train,
+            'X_val': X_val,
+            'X_test': X_test,
+            'y_train': y_train,
+            'y_val': y_val,
+            'y_test': y_test,
+            'input_size': input_size
+        }, DATA_CACHE_PATH)
+
+    return X_train, X_val, X_test, y_train, y_val, y_test, input_size
 
 
 def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
@@ -54,7 +94,6 @@ def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
     X_train_raw, X_val_raw, y_train_np, y_val_np = train_test_split(
         X_temp, y_temp, test_size=val_size, random_state=random_state
     )
-
 
     # Feature Scaling
     scaler = StandardScaler()
