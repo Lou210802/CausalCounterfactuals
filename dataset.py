@@ -63,6 +63,11 @@ def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
     X = X.copy()
     y = y.copy()
 
+    # Drop redundant or non-causal features
+    features_to_drop = ['fnlwgt', 'education', ""]
+    X = X.drop(columns=[col for col in features_to_drop if col in X.columns])
+    print(f"Dropped features: {features_to_drop}")
+
     # Handle missing values marked as '?'
     X = X.replace('?', np.nan)
     # Simple imputation: fill NaN with the mode of the column
