@@ -83,7 +83,7 @@ def main():
             x,
             desired_y=desired_target,
             feature_mask=feature_mask,
-            lambda_reg=0.1
+            lambda_reg=1
         )
 
         results = compare_results(x, cf_tensor, scaler, columns)

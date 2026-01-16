@@ -1,6 +1,60 @@
 import pandas as pd
 import torch
-from torch import nn
+import torch.nn.functional as F
+
+
+def compute_distance(x, counterfactual):
+    """
+    Computes the distance between the original input and a counterfactual, using the L1 distance.
+
+    Parameters:
+        x (torch.tensor): The original input, of shape (1, num_features)
+        counterfactual (torch.tensor): The counterfactual input. Same shape as x.
+
+    Returns:
+        distance (torch.tensor): The L1 distance between the original input x and the counterfactual input.
+    """
+    l1_distance = torch.norm((x - counterfactual), p=1)
+    return l1_distance
+
+
+def compute_output_difference(logits, desired_y):
+    """
+    Computes the difference between the model's output and a desired target output based on the binary cross entropy loss
+
+    Parameters:
+        output (torch.tensor): The models output for a single instance.
+        desired_output (torch.tensor): The target output
+
+    Returns:
+        difference (torch.tensor): The binary cross entropy loss between output and desired_output.
+    """
+    # Ensure target is a float tensor on the same device as logits
+    target = torch.tensor([[float(desired_y)]], device=logits.device)
+    return F.binary_cross_entropy_with_logits(logits, target)
+
+
+def compute_loss(x, counterfactual, logits, desired_y, lambda_reg):
+    """
+    Computes the loss that is minimized during counterfactual generation.
+    The loss has two components:
+        - the distance between the original instance x and the counterfactual instance
+        - the difference between the model output and the desired output.
+    The two components are combined via a weighted sum (weighted by lambda).
+
+    Parameters:
+        x (torch.tensor): The original input, of shape (1, num_features)
+        counterfactual (torch.tensor): The counterfactual input. Same shape as x.
+        output (torch.tensor): The models' output for a single instance of shape (1, 3).
+        desired_output (torch.tensor): The target output, of same shape as the output.
+        lambda_reg (float): The lambda denoting the regularization strength.
+
+    Returns:
+        difference (torch.tensor): The summed square error between output and desired_output.
+    """
+    distance = compute_distance(x, counterfactual)
+    difference = compute_output_difference(logits, desired_y)
+    return distance + lambda_reg * difference
 
 
 def create_counterfactual(model, x, desired_y, feature_mask, lambda_reg=1, num_steps=1000):
@@ -18,11 +72,6 @@ def create_counterfactual(model, x, desired_y, feature_mask, lambda_reg=1, num_s
 
     optimizer = torch.optim.Adam([counterfactual])
 
-    # Target label needs to be a float tensor for Binary Cross Entropy
-    target = torch.tensor([[float(desired_y)]], device=device)
-
-    loss_func = nn.BCEWithLogitsLoss()
-
     model.eval()
 
     for step in range(1, num_steps + 1):
@@ -30,12 +79,8 @@ def create_counterfactual(model, x, desired_y, feature_mask, lambda_reg=1, num_s
 
         output = model(counterfactual)
 
-        loss_prediction = loss_func(output, target)
-        loss_distance = torch.norm(counterfactual - x, p=2)
-
-        total_loss = loss_prediction + lambda_reg * loss_distance
-
-        total_loss.backward()
+        loss = compute_loss(x, counterfactual, output, desired_y, lambda_reg)
+        loss.backward()
 
         # Zero out gradients for features we don't want to change
         # This prevents the optimizer from updating categorical/frozen columns
