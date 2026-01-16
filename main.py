@@ -72,6 +72,8 @@ def main():
 
         # Use first instance from the test set
         x = X_test[0].unsqueeze(0)
+
+        # Mask features that are continuous
         feature_mask = torch.tensor([
             1.0 if '_' not in col else 0.0 for col in columns
         ]).float()
