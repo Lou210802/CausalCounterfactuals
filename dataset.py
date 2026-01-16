@@ -13,36 +13,28 @@ DATA_CACHE_PATH = "data_cache.pt"
 def load_data():
     # Check if data is available in local cache
     if os.path.exists(DATA_CACHE_PATH):
-        print("Load data from cache...")
-        cache = torch.load(DATA_CACHE_PATH)
-        X_train = cache['X_train']
-        X_val = cache['X_val']
-        X_test = cache['X_test']
-        y_train = cache['y_train']
-        y_val = cache['y_val']
-        y_test = cache['y_test']
-        input_size = cache['input_size']
+        print("Loading data and metadata from cache...")
+        cache = torch.load(DATA_CACHE_PATH, weights_only=False)
+        return (cache['X_train'], cache['X_val'], cache['X_test'],
+                cache['y_train'], cache['y_val'], cache['y_test'],
+                cache['input_size'], cache['scaler'], cache['columns'])
     else:
         print("Fetching dataset from UCI...")
         adult = fetch_ucirepo(id=2)
         X = adult.data.features
         y = adult.data.targets
 
-        X_train, X_val, X_test, y_train, y_val, y_test, input_size = preprocess_adult_data(X, y)
+        X_train, X_val, X_test, y_train, y_val, y_test, input_dim, scaler, columns = preprocess_adult_data(X, y)
 
         # Save dataset in cache
-        print("Save data to cache...")
+        print("Saving data and metadata to cache...")
         torch.save({
-            'X_train': X_train,
-            'X_val': X_val,
-            'X_test': X_test,
-            'y_train': y_train,
-            'y_val': y_val,
-            'y_test': y_test,
-            'input_size': input_size
+            'X_train': X_train, 'X_val': X_val, 'X_test': X_test,
+            'y_train': y_train, 'y_val': y_val, 'y_test': y_test,
+            'input_size': input_dim, 'scaler': scaler, 'columns': columns
         }, DATA_CACHE_PATH)
 
-    return X_train, X_val, X_test, y_train, y_val, y_test, input_size
+        return X_train, X_val, X_test, y_train, y_val, y_test, input_dim, scaler, columns
 
 
 def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
@@ -81,6 +73,9 @@ def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
     # Encode categorical features (One-Hot Encoding)
     X_encoded = pd.get_dummies(X, drop_first=True)
 
+    # Store the column names as a list for later counterfactual mapping
+    column_names = X_encoded.columns.tolist()
+
     # Encode the Target variable
     # Convert '>50K' strings to 1 and '<=50K' to 0
     target_col = y.columns[0]
@@ -111,4 +106,4 @@ def preprocess_adult_data(X, y, test_size=0.2, val_size=0.1, random_state=42):
 
     input_dim = X_encoded.shape[1]
 
-    return X_train, X_val, X_test, y_train, y_val, y_test, input_dim
+    return X_train, X_val, X_test, y_train, y_val, y_test, input_dim, scaler, column_names

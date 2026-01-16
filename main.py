@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 
+from counterfactuals import create_counterfactual, compare_results
 from dataset import load_data
 from model import Model
 from train import train_model, test_model
@@ -21,13 +22,16 @@ def main():
     # Test Parameters
     parser.add_argument("--test", action="store_true", help="Test a model")
 
+    # Counterfactual Parameters
+    parser.add_argument("--counterfactuals", action="store_true", help="Compute counterfactuals")
+
     # Model/File paths
     parser.add_argument("--model_name", type=str, default="model.pth", help="Filename for saved model")
 
     args = parser.parse_args()
 
     # Load Data
-    X_train, X_val, X_test, y_train, y_val, y_test, input_size = load_data()
+    X_train, X_val, X_test, y_train, y_val, y_test, input_size, scaler, columns = load_data()
 
     # Initialize Model
     model = Model(input_size)
@@ -62,6 +66,28 @@ def main():
 
         print("Running test evaluation...")
         test_model(model, X_test, y_test)
+
+    if args.counterfactuals:
+        print("Computing counterfactuals...")
+
+        # Use first instance from the test set
+        x = X_test[0].unsqueeze(0)
+        feature_mask = torch.tensor([
+            1.0 if '_' not in col else 0.0 for col in columns
+        ]).float()
+
+        desired_target = 1  # >= 50k
+
+        cf_tensor, steps = create_counterfactual(
+            model,
+            x,
+            desired_y=desired_target,
+            feature_mask=feature_mask,
+            lambda_reg=0.1
+        )
+
+        results = compare_results(x, cf_tensor, scaler, columns)
+        print(results)
 
 
 if __name__ == "__main__":
