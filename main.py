@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 
+from causal_model import generate_causal_graph
 from counterfactuals import create_counterfactual, compare_results
 from dataset import load_data
 from model import Model
@@ -24,6 +25,9 @@ def main():
 
     # Counterfactual Parameters
     parser.add_argument("--counterfactuals", action="store_true", help="Compute counterfactuals")
+
+    # Causal Analysis Parameters
+    parser.add_argument("--causal-learn", action="store_true", help="Generate causal graph from dataset")
 
     # Model/File paths
     parser.add_argument("--model_name", type=str, default="model.pth", help="Filename for saved model")
@@ -90,6 +94,10 @@ def main():
 
         results = compare_results(x, cf_tensor, scaler, columns)
         print(results)
+
+    if args.causal_learn:
+        print("Generating causal graph from dataset...")
+        generate_causal_graph()
 
 
 if __name__ == "__main__":

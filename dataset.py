@@ -10,6 +10,14 @@ from ucimlrepo import fetch_ucirepo
 DATA_CACHE_PATH = "data_cache.pt"
 
 
+def load_raw_dataset():
+    print("Fetching dataset from UCI...")
+    adult = fetch_ucirepo(id=2)
+    X = adult.data.features
+    y = adult.data.targets
+    return X, y
+
+
 def load_data():
     # Check if data is available in local cache
     if os.path.exists(DATA_CACHE_PATH):
@@ -19,11 +27,7 @@ def load_data():
                 cache['y_train'], cache['y_val'], cache['y_test'],
                 cache['input_size'], cache['scaler'], cache['columns'])
     else:
-        print("Fetching dataset from UCI...")
-        adult = fetch_ucirepo(id=2)
-        X = adult.data.features
-        y = adult.data.targets
-
+        X, y = load_raw_dataset()
         X_train, X_val, X_test, y_train, y_val, y_test, input_dim, scaler, columns = preprocess_adult_data(X, y)
 
         # Save dataset in cache

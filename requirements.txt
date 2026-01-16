@@ -3,3 +3,5 @@ torchvision
 ucimlrepo
 scikit-learn
 tqdm
+dowhy
+causal-learn
