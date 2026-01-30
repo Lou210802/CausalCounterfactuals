@@ -5,3 +5,4 @@ scikit-learn
 tqdm
 dowhy
 causal-learn
+dice_ml

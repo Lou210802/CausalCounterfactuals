@@ -56,7 +56,7 @@ def save_counterfactual_report(results, scaler, columns, label_encoders=None, fi
         idx = r["index"]
         success = r["success"]
         lines.append("=" * 80)
-        lines.append(f"Index: {idx} | Success: {success} | Steps: {r['steps']} | L1: {r['l1_distance']:.3f}")
+        lines.append(f"Index: {idx} | Success: {success} | Steps: {r['steps']} | Gower: {r['proximity_gower']:.3f}")
 
         if "original" in r and "counterfactual" in r:
             try:
