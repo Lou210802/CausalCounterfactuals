@@ -159,7 +159,7 @@ def main():
             desired_y=1,
             continuous_features=continuous_features,
             outcome_name=outcome_name,
-            max_scan=None,
+            max_scan=5,
         )
 
         print(f"Scanned: {summary['scanned']}")
@@ -179,13 +179,14 @@ def main():
                 success_only,
                 scaler,
                 columns,
+                label_encoders=label_encoders,
                 filepath="dice_counterfactual_report_success.txt"
             )
             print("Saved dice_counterfactual_report_success.txt")
         else:
             print("No successful counterfactuals to save.")
 
-        save_counterfactual_report(results, scaler, columns, filepath="dice_counterfactual_report_all.txt", max_rows=None)
+        save_counterfactual_report(results, scaler, columns, label_encoders=label_encoders, filepath="dice_counterfactual_report_all.txt", max_rows=None)
 
 
     if args.causal_learn:
