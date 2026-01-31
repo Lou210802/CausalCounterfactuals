@@ -58,6 +58,16 @@ def save_counterfactual_report(results, scaler, columns, label_encoders=None, fi
         lines.append("=" * 80)
         lines.append(f"Index: {idx} | Success: {success} | Steps: {r['steps']} | Gower: {r['proximity_gower']:.3f}")
 
+        if r.get("violated_immutable_features"):
+            lines.append("!!! IMMUTABLE VIOLATIONS:")
+            for rule in r["violated_immutable_features"]:
+                lines.append(f"   - Broken Rule: {rule}")
+
+        if r.get("violated_causal_rules"):
+            lines.append("!!! CAUSAL VIOLATIONS:")
+            for rule in r["violated_causal_rules"]:
+                lines.append(f"   - Broken Rule: {rule}")
+
         if "original" in r and "counterfactual" in r:
             try:
                 # Pass label_encoders here for the final translation

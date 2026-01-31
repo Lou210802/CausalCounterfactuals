@@ -3,52 +3,43 @@ from causallearn.utils.GraphUtils import GraphUtils
 
 from dataset import load_raw_dataset
 
-# Define the Causal Graph (DAG) manual
-# Arrows (->) represent "causes"
-causal_graph = """
-digraph {
-    # Exogenous / Demographic Factors (Root causes)
-    age -> education_num;
-    age -> marital_status;
-    age -> occupation;
-    age -> hours_per_week;
-    age -> income;
+manual_causal_rules = [
+    (["age"], ["education_num"]),
+    (["age"], ["marital_status"]),
+    (["sex"], ["education_num"]),
+    (["education_num"], ["occupation"]),
+    (["education_num"], ["income"]),
+    (["workclass"], ["occupation"]),
+    (["workclass"], ["income"]),
+    (["occupation"], ["income"]),
+    (["capital_gain"], ["income"]),
+    (["capital_loss"], ["income"]),
+    (["naitive_country"], ["education_num"]),
+    (["naitive_country"], ["race"]),
+    (["race"], ["workclass"]),
+]
 
-    sex -> education_num;
-    sex -> occupation;
-    sex -> hours_per_week;
-    sex -> income;
 
-    race -> education_num;
-    race -> occupation;
-    race -> income;
+def get_learned_causal_rules(cg):
+    """
+    Translates the CausalGraph object from causal-learn into a list of rules:
+    [( [parent], [child] ), ...]
+    """
+    rules = []
+    nodes = cg.G.nodes
+    # Get the adjacency matrix: 1 = directed edge, -1 = undirected
+    adj = cg.G.graph
 
-    native_country -> education_num;
-    native_country -> income;
+    for i in range(len(nodes)):
+        for j in range(len(nodes)):
+            # In causal-learn, a directed edge i -> j is represented
+            # by adj[i,j] == -1 and adj[j,i] == 1 (standard PC output)
+            if adj[i, j] == -1 and adj[j, i] == 1:
+                parent_name = nodes[i].get_name()
+                child_name = nodes[j].get_name()
+                rules.append(([parent_name], [child_name]))
 
-    # Intermediate / Societal Factors
-    education_num -> occupation;
-    education_num -> income;
-
-    marital_status -> relationship;
-    marital_status -> hours_per_week;
-    marital_status -> income;
-
-    relationship -> income;
-
-    # Economic / Professional Factors
-    workclass -> occupation;
-    workclass -> income;
-
-    occupation -> hours_per_week;
-    occupation -> income;
-
-    hours_per_week -> income;
-
-    capital_gain -> income;
-    capital_loss -> income;
-}
-"""
+    return rules
 
 
 def generate_causal_graph():

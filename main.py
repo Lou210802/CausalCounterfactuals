@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import torch
 
-from causal_model import generate_causal_graph
+from causal_model import generate_causal_graph, get_learned_causal_rules, manual_causal_rules
 from counterfactuals import generate_counterfactuals_for_dataset
 from counterfacutal_report import save_counterfactual_report
 from dataset import load_data
@@ -38,7 +38,8 @@ def main():
                         help="How many test rows to scan at most when searching for CF candidates (default: scan full test set)")
 
     # Causal Analysis Parameters
-    parser.add_argument("--causal-learn", action="store_true", help="Generate causal graph from dataset")
+    parser.add_argument("--generated_cr", action="store_true", help="Generate causal graph and use rules")
+    parser.add_argument("--manual_cr", action="store_true", help="Use manual defined causal rules")
 
     # Model/File paths
     parser.add_argument("--model_name", type=str, default="model.pth", help="Filename for saved model")
@@ -137,6 +138,15 @@ def main():
 
         save_counterfactual_report(results, scaler, columns, filepath="counterfactual_report_all.txt", max_rows=None)
 
+    causal_rules = None
+    if args.generated_cr:
+        print("Generating causal graph from dataset...")
+        cg = generate_causal_graph()
+        causal_rules = get_learned_causal_rules(cg)
+
+    if args.manual_cr:
+        causal_rules = manual_causal_rules
+
     if args.dice_counterfactuals:
         if not args.train:
             if os.path.exists(full_path):
@@ -165,7 +175,7 @@ def main():
             test_df[c] = test_df[c].astype(int)
 
         immutable_groups = [
-            ["age"],
+            #["age"],
             ["sex"],
             ["race"],
             ["native-country"]
@@ -181,7 +191,7 @@ def main():
             total_cfs=args.dice_total_cfs,
             train_features_df=train_features_df,
             immutable_groups=immutable_groups,
-            causal_rules=None,
+            causal_rules=causal_rules,
             plausibility_k=1,
         )
 
@@ -230,10 +240,6 @@ def main():
             f.write(f"Max CFs generated: {summary['max_num_cfs_generated']}\n")
 
         print("Saved dice_summary.txt")
-
-    if args.causal_learn:
-        print("Generating causal graph from dataset...")
-        generate_causal_graph()
 
 
 if __name__ == "__main__":

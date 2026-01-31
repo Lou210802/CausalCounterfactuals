@@ -146,15 +146,17 @@ def run_dice_evaluation(model, test_df, desired_y, continuous_features, outcome_
                 for cf_row in cf_rows:
                     prox = gower_distance_row(orig_row, cf_row, orig_cols, meta)
                     plaus = knn_plausibility_distance(cf_row, train_matrix, orig_cols, meta, k=plausibility_k)
-                    immut_v = immutable_violation(orig_row, cf_row, orig_cols, immutable_groups)
-                    caus_v = causal_violation_hard(orig_row, cf_row, orig_cols, causal_rules=causal_rules)
+                    immut_v, violated_cols = immutable_violation(orig_row, cf_row, orig_cols, immutable_groups)
+                    caus_v, broken_rules = causal_violation_hard(orig_row, cf_row, orig_cols, causal_rules=causal_rules)
                     spars = count_changed_features(orig_row, cf_row)
 
                     per_cf_metrics.append({
                         "proximity_gower": prox,
                         "plausibility_knn_gower": plaus,
                         "immutable_violation": immut_v,
+                        "violated_immutable_features": violated_cols,
                         "causal_violation": caus_v,
+                        "violated_causal_rules": broken_rules,
                         "sparsity": spars,
                     })
 
@@ -182,7 +184,9 @@ def run_dice_evaluation(model, test_df, desired_y, continuous_features, outcome_
                     "proximity_gower": per_cf_metrics[best_idx]["proximity_gower"],
                     "plausibility_knn_gower": per_cf_metrics[best_idx]["plausibility_knn_gower"],
                     "immutable_violation": per_cf_metrics[best_idx]["immutable_violation"],
+                    "violated_immutable_features": per_cf_metrics[best_idx]["violated_immutable_features"],
                     "causal_violation": per_cf_metrics[best_idx]["causal_violation"],
+                    "violated_causal_rules": per_cf_metrics[best_idx]["violated_causal_rules"],
                     "sparsity": per_cf_metrics[best_idx]["sparsity"],
 
                     # Diversity across all CFs

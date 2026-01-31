@@ -130,46 +130,59 @@ def count_changed_features(
 
 
 def immutable_violation(
-    orig: np.ndarray,
-    cf: np.ndarray,
-    cols: Sequence[str],
-    immutable_groups: List[List[str]],
-    eps: float = 1e-3,
-) -> bool:
+        orig: np.ndarray,
+        cf: np.ndarray,
+        cols: Sequence[str],
+        immutable_groups: List[List[str]],
+        eps: float = 1e-3,
+) -> Tuple[bool, List[str]]:
     """
-    immutable_groups: list of groups, each group a list of columns
-    Violation if any column in any group changes.
+    Checks if any immutable features were changed.
+
+    Returns:
+        is_violated (bool): True if any immutable feature changed.
+        violated_columns (list): Names of the specific features that were illegally changed.
     """
     col_to_idx = {c: i for i, c in enumerate(cols)}
+    violated_columns = []
+
     for group in immutable_groups:
         for c in group:
             if c not in col_to_idx:
                 continue
             i = col_to_idx[c]
+            # Check if the difference exceeds the epsilon threshold
             if abs(orig[i] - cf[i]) > eps:
-                return True
-    return False
+                violated_columns.append(c)
+
+    is_violated = len(violated_columns) > 0
+    return is_violated, violated_columns
+
+
+from typing import Tuple, List
 
 
 def causal_violation_hard(
-    orig: np.ndarray,
-    cf: np.ndarray,
-    cols: Sequence[str],
-    causal_rules: Optional[List[Tuple[List[str], List[str]]]] = None,
-    eps: float = 1e-3,
-) -> bool:
+        orig: np.ndarray,
+        cf: np.ndarray,
+        cols: Sequence[str],
+        causal_rules: Optional[List[Tuple[List[str], List[str]]]] = None,
+        eps: float = 1e-3,
+) -> Tuple[bool, List[str]]:
     """
     Very simple hard-rule check:
     causal_rules = list of (parents, children)
     Violation if any child changes while none of its parents changed.
 
-    Example: [ (["age"], ["education_num"]), (["marital_status_*"], ["relationship_*"]) ]
-    For one-hot groups you should pass columns as groups beforehand.
+    Returns:
+        is_violated (bool): True if any causal rule was violated.
+        violated_rules (list): A list of strings describing each broken relationship.
     """
     if not causal_rules:
-        return False
+        return False, []
 
     col_to_idx = {c: i for i, c in enumerate(cols)}
+    violated_rules = []
 
     def group_changed(group_cols: List[str]) -> bool:
         for c in group_cols:
@@ -183,6 +196,11 @@ def causal_violation_hard(
     for parents, children in causal_rules:
         parent_changed = group_changed(parents)
         child_changed = group_changed(children)
-        if child_changed and (not parent_changed):
-            return True
-    return False
+
+        # Logic: If the 'effect' (child) changed, but the 'cause' (parents) stayed the same,
+        # the counterfactual is causally inconsistent according to the graph.
+        if child_changed and not parent_changed:
+            violated_rules.append(f"{parents} -> {children}")
+
+    is_violated = len(violated_rules) > 0
+    return is_violated, violated_rules
