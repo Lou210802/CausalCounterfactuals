@@ -4,19 +4,24 @@ from causallearn.utils.GraphUtils import GraphUtils
 from dataset import load_raw_dataset
 
 manual_causal_rules = [
-    (["age"], ["education_num"]),
-    (["age"], ["marital_status"]),
-    (["sex"], ["education_num"]),
-    (["education_num"], ["occupation"]),
-    (["education_num"], ["income"]),
+    (["age"], ["marital-status"]),
+    (["age"], ["workclass"]),
+    (["age"], ["occupation"]),
+    (["age"], ["hours-per-week"]),
+    (["native-country"], ["workclass"]),
+
+    (["education-num"], ["occupation"]),
     (["workclass"], ["occupation"]),
-    (["workclass"], ["income"]),
-    (["occupation"], ["income"]),
-    (["capital_gain"], ["income"]),
-    (["capital_loss"], ["income"]),
-    (["naitive_country"], ["education_num"]),
-    (["naitive_country"], ["race"]),
-    (["race"], ["workclass"]),
+    (["occupation"], ["hours-per-week"]),
+
+    (["marital-status"], ["relationship"]),
+
+    (["education-num"], ["capital-gain"]),
+    (["education-num"], ["capital-loss"]),
+    (["occupation"], ["capital-gain"]),
+    (["occupation"], ["capital-loss"]),
+    (["hours-per-week"], ["capital-gain"]),
+    (["hours-per-week"], ["capital-loss"]),
 ]
 
 
@@ -32,8 +37,7 @@ def get_learned_causal_rules(cg):
 
     for i in range(len(nodes)):
         for j in range(len(nodes)):
-            # In causal-learn, a directed edge i -> j is represented
-            # by adj[i,j] == -1 and adj[j,i] == 1 (standard PC output)
+            # PC: directed edge i -> j corresponds to adj[i,j] == -1 and adj[j,i] == 1
             if adj[i, j] == -1 and adj[j, i] == 1:
                 parent_name = nodes[i].get_name()
                 child_name = nodes[j].get_name()
@@ -83,3 +87,17 @@ def generate_causal_graph():
         print(f"Visualization failed: {e}. Check if Graphviz is installed on your system.")
 
     return cg
+
+
+def get_given_dag_spec(feature_cols):
+    """Return the hand-defined DAG as a dag_spec: [(child, [parents...]), ...]."""
+
+    cleaned = []
+    for parents, children in manual_causal_rules:
+        for child in children:
+            if child not in feature_cols:
+                continue
+            ps = [p for p in parents if p in feature_cols]
+            if ps:
+                cleaned.append((child, ps))
+    return cleaned
