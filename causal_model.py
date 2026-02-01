@@ -1,3 +1,4 @@
+import pydot
 from causallearn.search.ConstraintBased.PC import pc
 from causallearn.utils.GraphUtils import GraphUtils
 
@@ -77,16 +78,57 @@ def generate_causal_graph():
     # alpha=0.05 is the significance level for conditional independence tests.
     # The algorithm removes edges where variables are found to be independent.
     cg = pc(data, alpha=0.05, node_names=labels)
-
-    # Visualization: Export the discovered graph to a PNG file
-    print("Discovery complete. Exporting to 'discovered_dag.png'...")
-    try:
-        pyd = GraphUtils.to_pydot(cg.G)
-        pyd.write_png('discovered_dag.png')
-    except Exception as e:
-        print(f"Visualization failed: {e}. Check if Graphviz is installed on your system.")
-
     return cg
+
+
+def visualize_graph(rules, title, output_filename='dag.png'):
+    """
+    Creates a PNG visualization of the manually defined causal rules.
+    """
+    title = ""
+
+    # Initialize a directed graph
+    graph = pydot.Dot(graph_type='digraph', label=title, labelloc='t')
+
+    graph.set('dpi', str(300))
+
+    font_size = "26"
+
+    graph.set_node_defaults(
+        style='filled',
+        fillcolor='white',
+        fontsize=font_size,
+
+        margin="0.2,0.1"
+    )
+
+    # Use a set to keep track of created nodes to avoid duplicates
+    created_nodes = set()
+
+    print(f"Generating manual graph visualization: {output_filename}...")
+
+    for parents, children in rules:
+        for p in parents:
+            # Clean names for Graphviz (replace hyphens with underscores)
+            p_name = p.replace('-', '_')
+            if p_name not in created_nodes:
+                graph.add_node(pydot.Node(p_name))
+                created_nodes.add(p_name)
+
+            for c in children:
+                c_name = c.replace('-', '_')
+                if c_name not in created_nodes:
+                    graph.add_node(pydot.Node(c_name))
+                    created_nodes.add(c_name)
+
+                # Add the directed edge
+                graph.add_edge(pydot.Edge(p_name, c_name))
+
+    try:
+        graph.write_png(output_filename)
+        print(f"Manual graph successfully exported to '{output_filename}'.")
+    except Exception as e:
+        print(f"Visualization failed")
 
 
 def get_given_dag_spec(feature_cols):
@@ -101,3 +143,10 @@ def get_given_dag_spec(feature_cols):
             if ps:
                 cleaned.append((child, ps))
     return cleaned
+
+
+if __name__ == "__main__":
+    cg = generate_causal_graph()
+    generated_rules = get_learned_causal_rules(cg)
+    visualize_graph(rules=generated_rules, title="Generated causal graph", output_filename='generated_dag.png')
+    visualize_graph(rules=manual_causal_rules, title="Manual defined causal graph", output_filename="manual_dag.png")
