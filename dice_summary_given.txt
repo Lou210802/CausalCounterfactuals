@@ -1,0 +1,25 @@
+=== DiCE Counterfactual Summary (given) ===
+
+Scanned instances: 9769
+Attempted instances: 7787
+Successful CFs: 7787
+Validity: 1.0000
+
+=== Distance & Sparsity ===
+Average Gower proximity: 0.0625
+Average sparsity: 3.3118
+Average diversity (Gower): 0.1102
+
+=== Plausibility & Constraints ===
+Average kNN plausibility (Gower): 0.0124
+Immutable violation rate: 0.0000
+Causal violation rate: 0.0000
+
+=== Runtime ===
+Average runtime (successful): 1.7030 s
+Average runtime (all): 1.7030 s
+
+=== Diversity Capacity ===
+Avg CFs generated per instance: 4.9323
+Min CFs generated: 1
+Max CFs generated: 5
